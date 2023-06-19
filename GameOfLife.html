@@ -1,0 +1,148 @@
+<html>
+<head>
+<style>
+td {
+    width: 2px;
+    height: 2px;
+    display: inline-block;
+    padding: 0; 
+    margin: 0;
+}
+
+table{
+    border-collapse: collapse;
+}
+
+.dead {
+    background-color:black;
+}
+
+.live {
+    background-color:green;
+}
+</style>
+
+</head>
+
+<body>
+<h6 id="generation"></h6>
+
+</body>
+
+<script>
+const LengthX = 900;
+const LengthY = 600;
+var generation = 0;
+
+createTable(LengthX, LengthY);
+
+var gof = GameOfLife();
+
+setInterval(function () { 
+    gof.Print(); 
+    gof.NextGeneration(); 
+}, 100); 
+
+function token(x, y){
+    return x*10000+y;
+}
+
+function GameOfLife()
+{
+    var Cells = {};
+    var CellsNext = {};
+    let tds = {};
+    
+    Iterate((x, y) => {
+        var temp = random(0, 3000);
+        Cells[token(x, y)] = temp > 2900 || temp % 30 == 2;
+    });
+    
+    return {
+      NextGeneration: NextGeneration,
+      Print: Print
+    };
+    
+    function NextGeneration(){
+        Iterate((x, y) => CellsNext[token(x, y)] = ShouldLive(x, y));
+        [Cells, CellsNext] = [CellsNext, Cells];
+    }
+    
+    // caches the getElementById object to avoid GC pressure
+    function tdsCached(key){
+        var val = tds[key];
+        if (val == undefined)
+            val = tds[key] = document.getElementById(key);
+        
+        return val;
+    }
+    
+    function Print(){
+        tdsCached("generation").innerHTML = generation++;
+        Iterate((x, y) => {
+            tdsCached(token(x, y)).className = Cells[token(x, y)] ? 'live' : 'dead';
+        });
+    }
+
+    function ShouldLive(x, y){
+        var isAlive = Cells[token(x, y)];
+        var neighbours = CountNeighbours(x, y);
+
+        // Any live cell with two or three live neighbours survives.
+        if (isAlive && neighbours == 2 || neighbours == 3)
+            return true;
+
+        // Any dead cell with three live neighbours becomes a live cell.
+        if (isAlive == false && neighbours == 3)
+            return true;
+
+        // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+        return false;
+    }
+
+    function CountNeighbours(x, y)
+    {
+        let IsAlive = (x, y) => Cells[token(x, y)] === true ? 1 : 0;
+        
+        let lineAbove = IsAlive(x - 1, y - 1) + IsAlive(x + 0, y - 1) + IsAlive(x + 1, y - 1);
+        let sameLine = IsAlive(x - 1, y + 0) + 0 + IsAlive(x + 1, y + 0);
+        let lineBelow = IsAlive(x - 1, y + 1) + IsAlive(x + 0, y + 1) + IsAlive(x + 1, y + 1);
+
+        return lineAbove + sameLine + lineBelow;      
+    }
+}
+
+function random(min, max) { 
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function Iterate(action)
+{
+  for (var x = 0; x < LengthX; x++)
+    for (var y = 0; y < LengthY; y++)
+      action(x, y);
+}
+
+function createTable(x, y) {
+  var table = document.createElement('table');
+  var tableBody = document.createElement('tbody');
+  
+  let tableData = [...Array(x).keys()];
+  let rowData = [...Array(y).keys()];
+  
+  tableData.forEach(function(x) {
+    var row = document.createElement('tr');
+    rowData.forEach(function(y) {
+        var cell = document.createElement('td');
+        cell.id = token(x, y);
+        row.appendChild(cell);
+    });
+    tableBody.appendChild(row);
+  });
+
+  table.appendChild(tableBody);
+  document.body.appendChild(table);
+}
+
+</script>
+</html>
